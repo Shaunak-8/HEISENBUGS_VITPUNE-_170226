@@ -13,15 +13,18 @@ import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const InterventionSuccessChart = () => {
+const InterventionSuccessChart = ({ data: successData }) => {
     const { isDarkMode } = useTheme();
 
+    const typeOrder = ['Payment Plan', 'Call', 'SMS', 'Email'];
+    const values = typeOrder.map(t => successData?.[t] || 0);
+
     const data = {
-        labels: ['Payment Plans', 'Calls', 'SMS', 'Email'],
+        labels: typeOrder,
         datasets: [
             {
                 label: 'Success Rate (%)',
-                data: [85, 78, 45, 32],
+                data: values,
                 backgroundColor: [
                     'rgba(34, 197, 94, 0.8)',   // Green
                     'rgba(59, 130, 246, 0.8)',  // Blue

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import StatCard from '../components/StatCard';
 import ActiveInterventionsTable from '../components/ActiveInterventionsTable';
 import InterventionSuccessChart from '../components/InterventionSuccessChart';
@@ -6,6 +7,33 @@ import ActivityFeed from '../components/ActivityFeed';
 import TeamPerformanceGrid from '../components/TeamPerformanceGrid';
 
 const Monitoring = () => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        axios.get('http://127.0.0.1:8000/monitoring')
+            .then(res => {
+                setData(res.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Failed to load monitoring:', err);
+                setLoading(false);
+            });
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    if (!data) {
+        return <div className="text-red-500 text-center p-8">Failed to load monitoring data. Is the backend running?</div>;
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -18,28 +46,28 @@ const Monitoring = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                     title="Active Interventions"
-                    value="64"
+                    value={data.stats.active_interventions.toString()}
                     icon="📋"
                     color="blue"
-                    subtitle="↑ 8 from yesterday"
+                    subtitle="Scheduled + In Progress"
                 />
                 <StatCard
                     title="Success Rate"
-                    value="76.5%"
+                    value={`${data.stats.success_rate}%`}
                     icon="✅"
                     color="green"
-                    subtitle="↑ 3.2% this week"
+                    subtitle="Completed interventions"
                 />
                 <StatCard
                     title="Avg Response Time"
-                    value="2.4 hrs"
+                    value={data.stats.avg_response_time}
                     icon="⏱️"
                     color="purple"
-                    subtitle="↓ 0.5 hrs from last week"
+                    subtitle="Time to first contact"
                 />
                 <StatCard
                     title="Resolved Today"
-                    value="18"
+                    value={data.stats.resolved_today.toString()}
                     icon="🎯"
                     color="yellow"
                     subtitle="Target: 20/day"
@@ -47,16 +75,16 @@ const Monitoring = () => {
             </div>
 
             {/* Active Interventions Table - Full Width */}
-            <ActiveInterventionsTable />
+            <ActiveInterventionsTable data={data.interventions} />
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <InterventionSuccessChart />
-                <ActivityFeed />
+                <InterventionSuccessChart data={data.success_by_type} />
+                <ActivityFeed data={data.activities} />
             </div>
 
             {/* Team Performance - Full Width */}
-            <TeamPerformanceGrid />
+            <TeamPerformanceGrid data={data.team} />
         </div>
     );
 };

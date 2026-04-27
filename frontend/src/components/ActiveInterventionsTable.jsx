@@ -1,28 +1,12 @@
 import React, { useState } from 'react';
 
-const ActiveInterventionsTable = () => {
+const ActiveInterventionsTable = ({ data: interventionsData }) => {
     const [sortConfig, setSortConfig] = useState({ key: 'riskScore', direction: 'desc' });
+    const [data, setData] = useState(interventionsData || []);
 
-    // Mock data: Active interventions
-    const interventionsData = [
-        { customerId: 'C-1247', riskScore: 89.3, type: 'Call', status: 'In Progress', assignedTo: 'Yash Z.', nextAction: '2026-02-16', priority: 'P1' },
-        { customerId: 'C-0892', riskScore: 85.7, type: 'Payment Plan', status: 'Scheduled', assignedTo: 'Shaunak S.', nextAction: '2026-02-17', priority: 'P1' },
-        { customerId: 'C-1103', riskScore: 82.4, type: 'Call', status: 'Completed', assignedTo: 'Yash Z.', nextAction: '2026-02-20', priority: 'P1' },
-        { customerId: 'C-0456', riskScore: 78.9, type: 'SMS', status: 'In Progress', assignedTo: 'Eklavya P.', nextAction: '2026-02-16', priority: 'P1' },
-        { customerId: 'C-1089', riskScore: 76.2, type: 'Email', status: 'Scheduled', assignedTo: 'Siddhi P.', nextAction: '2026-02-18', priority: 'P1' },
-        { customerId: 'C-0734', riskScore: 73.8, type: 'Call', status: 'In Progress', assignedTo: 'Yash Z.', nextAction: '2026-02-16', priority: 'P2' },
-        { customerId: 'C-0921', riskScore: 71.5, type: 'Payment Plan', status: 'Completed', assignedTo: 'Shaunak S.', nextAction: '2026-02-25', priority: 'P2' },
-        { customerId: 'C-1156', riskScore: 69.3, type: 'SMS', status: 'Failed', assignedTo: 'Eklavya P.', nextAction: '2026-02-17', priority: 'P2' },
-        { customerId: 'C-0567', riskScore: 67.8, type: 'Call', status: 'In Progress', assignedTo: 'Siddhi P.', nextAction: '2026-02-16', priority: 'P2' },
-        { customerId: 'C-0812', riskScore: 65.4, type: 'Email', status: 'Scheduled', assignedTo: 'Yash Z.', nextAction: '2026-02-19', priority: 'P2' },
-        { customerId: 'C-0945', riskScore: 63.2, type: 'SMS', status: 'Completed', assignedTo: 'Eklavya P.', nextAction: '2026-02-22', priority: 'P2' },
-        { customerId: 'C-1234', riskScore: 61.8, type: 'Call', status: 'In Progress', assignedTo: 'Shaunak S.', nextAction: '2026-02-16', priority: 'P2' },
-        { customerId: 'C-0678', riskScore: 59.5, type: 'Payment Plan', status: 'Scheduled', assignedTo: 'Siddhi P.', nextAction: '2026-02-18', priority: 'P3' },
-        { customerId: 'C-1045', riskScore: 57.3, type: 'Email', status: 'In Progress', assignedTo: 'Eklavya P.', nextAction: '2026-02-17', priority: 'P3' },
-        { customerId: 'C-0889', riskScore: 55.1, type: 'SMS', status: 'Scheduled', assignedTo: 'Yash Z.', nextAction: '2026-02-19', priority: 'P3' }
-    ];
-
-    const [data, setData] = useState(interventionsData);
+    React.useEffect(() => {
+        setData(interventionsData || []);
+    }, [interventionsData]);
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -120,8 +104,8 @@ const ActiveInterventionsTable = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {data.map((intervention) => (
-                            <tr key={intervention.customerId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {data.map((intervention, idx) => (
+                            <tr key={`${intervention.customerId}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                     {intervention.customerId}
                                 </td>

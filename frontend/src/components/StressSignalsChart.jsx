@@ -13,15 +13,18 @@ import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const StressSignalsChart = () => {
+const StressSignalsChart = ({ data }) => {
     const { isDarkMode } = useTheme();
 
-    const data = {
-        labels: ['Salary Delay', 'Failed Autodebits', 'Liquidity Issues', 'Utility Delays', 'Lending App Usage'],
+    const labels = data?.labels || ['Salary Delay', 'Failed Autodebits', 'Liquidity Issues', 'Utility Delays', 'Lending App Usage'];
+    const values = data?.values || [0, 0, 0, 0, 0];
+
+    const chartData = {
+        labels: labels,
         datasets: [
             {
                 label: 'Contribution (%)',
-                data: [35, 28, 22, 10, 5],
+                data: values,
                 backgroundColor: [
                     'rgba(239, 68, 68, 0.8)',   // Red
                     'rgba(249, 115, 22, 0.8)',  // Orange
@@ -41,6 +44,8 @@ const StressSignalsChart = () => {
         ]
     };
 
+    const maxVal = Math.max(...values, 10);
+
     const options = {
         indexAxis: 'y',
         responsive: true,
@@ -58,7 +63,7 @@ const StressSignalsChart = () => {
                 bodyColor: isDarkMode ? '#000' : '#fff',
                 callbacks: {
                     label: function (context) {
-                        return context.parsed.x + '% of delinquency cases';
+                        return context.parsed.x + '% of at-risk customers';
                     }
                 }
             }
@@ -66,7 +71,7 @@ const StressSignalsChart = () => {
         scales: {
             x: {
                 beginAtZero: true,
-                max: 40,
+                max: Math.ceil(maxVal / 10) * 10,
                 ticks: {
                     color: isDarkMode ? '#9ca3af' : '#374151',
                     callback: function (value) {
@@ -92,7 +97,7 @@ const StressSignalsChart = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Contributing Stress Signals</h3>
             <div style={{ height: '280px' }}>
-                <Bar data={data} options={options} />
+                <Bar data={chartData} options={options} />
             </div>
         </div>
     );

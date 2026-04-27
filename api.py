@@ -5,6 +5,7 @@ from typing import Optional
 import joblib
 import pandas as pd
 from decision_engine import score_customer
+from database import init_db, is_seeded, seed_database, save_scoring_result, get_dashboard_stats, get_risk_overview, get_monitoring_data, get_scoring_history
 
 # ----------------------------
 # Load Model Once (at startup)
@@ -28,6 +29,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ----------------------------
+# Database Initialization
+# ----------------------------
+@app.on_event("startup")
+def startup():
+    init_db()
+    if not is_seeded():
+        seed_database()
 
 
 # ----------------------------
@@ -66,4 +76,41 @@ def score(input_data: CustomerInput):
     # Call your decision engine
     result = score_customer(customer_dict)
 
-    return result
+    # Generate customer ID and save to database
+    import random
+    customer_id = f"C-{random.randint(1, 9999):04d}"
+    save_scoring_result(customer_id, customer_dict, result)
+
+    return {**result, "customer_id": customer_id}
+
+
+# ----------------------------
+# Dashboard Endpoint
+# ----------------------------
+@app.get("/dashboard")
+def dashboard():
+    return get_dashboard_stats()
+
+
+# ----------------------------
+# Risk Overview Endpoint
+# ----------------------------
+@app.get("/risk-overview")
+def risk_overview():
+    return get_risk_overview()
+
+
+# ----------------------------
+# Monitoring Endpoint
+# ----------------------------
+@app.get("/monitoring")
+def monitoring():
+    return get_monitoring_data()
+
+
+# ----------------------------
+# Scoring History Endpoint
+# ----------------------------
+@app.get("/scoring-history")
+def scoring_history():
+    return get_scoring_history()

@@ -13,14 +13,17 @@ import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const RiskDistributionChart = () => {
+const RiskDistributionChart = ({ data: distributionData }) => {
     const { isDarkMode } = useTheme();
+
+    const values = distributionData || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
     const data = {
         labels: ['0-10%', '10-20%', '20-30%', '30-40%', '40-50%', '50-60%', '60-70%', '70-80%', '80-90%', '90-100%'],
         datasets: [
             {
                 label: 'Number of Customers',
-                data: [45, 78, 112, 156, 189, 245, 198, 134, 67, 23],
+                data: values,
                 backgroundColor: [
                     'rgba(34, 197, 94, 0.8)',   // Green
                     'rgba(34, 197, 94, 0.7)',

@@ -1,9 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import ScoringForm from '../components/ScoringForm';
 import ResultCard from '../components/ResultCard';
 
 const LiveScoring = () => {
     const [scoringResult, setScoringResult] = useState(null);
+    const [history, setHistory] = useState([]);
+
+    const loadHistory = () => {
+        axios.get('http://127.0.0.1:8000/scoring-history')
+            .then(res => setHistory(res.data))
+            .catch(err => console.error('Failed to load history:', err));
+    };
+
+    useEffect(() => {
+        loadHistory();
+    }, []);
+
+    const handleResult = (result) => {
+        setScoringResult(result);
+        // Refresh history after new score
+        setTimeout(loadHistory, 500);
+    };
+
+    const getRiskColor = (risk) => {
+        switch (risk) {
+            case 'High': return 'text-red-600 dark:text-red-400';
+            case 'Medium': return 'text-yellow-600 dark:text-yellow-400';
+            case 'Low': return 'text-green-600 dark:text-green-400';
+            default: return 'text-gray-600';
+        }
+    };
+
+    const getPriorityBadge = (priority) => {
+        const colors = {
+            'P1': 'bg-red-100 text-red-700',
+            'P2': 'bg-orange-100 text-orange-700',
+            'P3': 'bg-blue-100 text-blue-700',
+        };
+        return colors[priority] || 'bg-gray-100 text-gray-700';
+    };
+
+    const formatTime = (isoStr) => {
+        try {
+            const dt = new Date(isoStr);
+            const now = new Date();
+            const diffMs = now - dt;
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) return `${diffDays}d ago`;
+            if (diffHrs > 0) return `${diffHrs}h ago`;
+            if (diffMins > 0) return `${diffMins}m ago`;
+            return 'Just now';
+        } catch {
+            return isoStr;
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -23,7 +76,7 @@ const LiveScoring = () => {
                     </div>
                     <div className="ml-3">
                         <p className="text-sm text-blue-700 dark:text-blue-300">
-                            <strong>How it works:</strong> Enter customer financial indicators below. The system will automatically detect stress levels and provide risk assessment with recommended actions.
+                            <strong>How it works:</strong> Enter customer financial indicators below. The system will automatically detect stress levels and provide risk assessment with recommended actions. Results are saved to the database and reflected across all dashboards.
                         </p>
                     </div>
                 </div>
@@ -33,7 +86,7 @@ const LiveScoring = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Scoring Form - Takes 2 columns on large screens */}
                 <div className="lg:col-span-2">
-                    <ScoringForm onResult={setScoringResult} />
+                    <ScoringForm onResult={handleResult} />
                 </div>
 
                 {/* Info Panel - Takes 1 column */}
@@ -91,6 +144,45 @@ const LiveScoring = () => {
             {scoringResult && (
                 <div className="mt-6">
                     <ResultCard result={scoringResult} />
+                </div>
+            )}
+
+            {/* Scoring History */}
+            {history.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Recent Scoring History</h3>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Customer</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Probability</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Risk</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Stress</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Priority</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">When</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {history.slice(0, 10).map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.customer_id}</td>
+                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">{(item.probability * 100).toFixed(1)}%</td>
+                                        <td className={`px-4 py-3 text-sm font-semibold ${getRiskColor(item.final_risk)}`}>{item.final_risk}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{item.detected_stress_type}</td>
+                                        <td className="px-4 py-3 text-sm">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityBadge(item.priority)}`}>
+                                                {item.priority}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{item.action}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{formatTime(item.scored_at)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </div>

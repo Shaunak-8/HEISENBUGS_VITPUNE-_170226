@@ -14,15 +14,19 @@ import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const RiskTrendChart = () => {
+const RiskTrendChart = ({ data: trendData }) => {
     const { isDarkMode } = useTheme();
-    // Mock data: 12-month risk trend
+
+    const labels = trendData?.map(d => `Week ${d.week}`) || [];
+    const riskValues = trendData?.map(d => d.avg_risk) || [];
+    const highCounts = trendData?.map(d => d.high_count) || [];
+
     const data = {
-        labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+        labels: labels,
         datasets: [
             {
                 label: 'Avg Risk Score (%)',
-                data: [38.5, 40.2, 41.8, 43.5, 42.1, 43.8, 45.2, 44.8, 43.5, 42.9, 42.3, 41.8],
+                data: riskValues,
                 borderColor: 'rgb(239, 68, 68)',
                 backgroundColor: 'rgba(239, 68, 68, 0.1)',
                 tension: 0.4,
@@ -30,7 +34,7 @@ const RiskTrendChart = () => {
             },
             {
                 label: 'High Risk Customers',
-                data: [52, 58, 61, 65, 63, 68, 72, 70, 68, 67, 67, 65],
+                data: highCounts,
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 tension: 0.4,
@@ -110,7 +114,7 @@ const RiskTrendChart = () => {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Risk Trend Over Time (FY 2025-26)</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Risk Trend by Week</h3>
             <div style={{ height: '300px' }}>
                 <Line data={data} options={options} />
             </div>

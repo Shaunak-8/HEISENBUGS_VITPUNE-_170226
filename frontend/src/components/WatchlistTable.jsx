@@ -1,23 +1,13 @@
 import React, { useState } from 'react';
 
-const WatchlistTable = () => {
+const WatchlistTable = ({ data: watchlistData }) => {
     const [sortConfig, setSortConfig] = useState({ key: 'riskScore', direction: 'desc' });
+    const [data, setData] = useState(watchlistData || []);
 
-    // Mock data: Top 10 high-risk customers
-    const watchlistData = [
-        { id: 'C-1247', riskScore: 89.3, stressType: 'Severe', priority: 'P1', lastUpdated: '2 hours ago' },
-        { id: 'C-0892', riskScore: 85.7, stressType: 'Severe', priority: 'P1', lastUpdated: '4 hours ago' },
-        { id: 'C-1103', riskScore: 82.4, stressType: 'Severe', priority: 'P1', lastUpdated: '1 day ago' },
-        { id: 'C-0456', riskScore: 78.9, stressType: 'Moderate', priority: 'P1', lastUpdated: '3 hours ago' },
-        { id: 'C-1089', riskScore: 76.2, stressType: 'Moderate', priority: 'P1', lastUpdated: '5 hours ago' },
-        { id: 'C-0734', riskScore: 73.8, stressType: 'Severe', priority: 'P2', lastUpdated: '6 hours ago' },
-        { id: 'C-0921', riskScore: 71.5, stressType: 'Moderate', priority: 'P2', lastUpdated: '8 hours ago' },
-        { id: 'C-1156', riskScore: 69.3, stressType: 'Moderate', priority: 'P2', lastUpdated: '12 hours ago' },
-        { id: 'C-0567', riskScore: 67.8, stressType: 'Moderate', priority: 'P2', lastUpdated: '1 day ago' },
-        { id: 'C-0812', riskScore: 65.4, stressType: 'Stable', priority: 'P2', lastUpdated: '2 days ago' }
-    ];
-
-    const [data, setData] = useState(watchlistData);
+    // Update data when prop changes
+    React.useEffect(() => {
+        setData(watchlistData || []);
+    }, [watchlistData]);
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -51,6 +41,21 @@ const WatchlistTable = () => {
 
     const getPriorityColor = (priority) => {
         return priority === 'P1' ? 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30' : 'text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/30';
+    };
+
+    const formatTime = (isoStr) => {
+        try {
+            const dt = new Date(isoStr);
+            const now = new Date();
+            const diffMs = now - dt;
+            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            if (diffHrs > 0) return `${diffHrs} hour${diffHrs > 1 ? 's' : ''} ago`;
+            return 'Just now';
+        } catch {
+            return isoStr;
+        }
     };
 
     return (
@@ -90,8 +95,8 @@ const WatchlistTable = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {data.map((customer) => (
-                            <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        {data.map((customer, idx) => (
+                            <tr key={`${customer.id}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                     {customer.id}
                                 </td>
@@ -109,7 +114,7 @@ const WatchlistTable = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    {customer.lastUpdated}
+                                    {formatTime(customer.lastUpdated)}
                                 </td>
                             </tr>
                         ))}

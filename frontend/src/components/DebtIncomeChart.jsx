@@ -14,24 +14,27 @@ import { useTheme } from '../context/ThemeContext';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const DebtIncomeChart = () => {
+const DebtIncomeChart = ({ data: weeklyData }) => {
     const { isDarkMode } = useTheme();
 
-    // Mock data: Debt-to-Income ratio over 12 months
+    const labels = weeklyData?.map(d => `Week ${d.week}`) || [];
+    const riskValues = weeklyData?.map(d => d.avg_risk) || [];
+    const liquidityValues = weeklyData?.map(d => d.avg_liquidity) || [];
+
     const data = {
-        labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'],
+        labels: labels,
         datasets: [
             {
-                label: 'Avg Debt (₹)',
-                data: [180000, 185000, 190000, 195000, 188000, 192000, 198000, 205000, 200000, 195000, 190000, 185000],
+                label: 'Avg Risk Score (%)',
+                data: riskValues,
                 borderColor: 'rgb(239, 68, 68)',
                 backgroundColor: 'rgba(239, 68, 68, 0.1)',
                 tension: 0.4,
                 yAxisID: 'y'
             },
             {
-                label: 'Avg Income (₹)',
-                data: [45000, 46000, 47000, 48000, 48500, 49000, 50000, 51000, 52000, 52500, 53000, 54000],
+                label: 'Avg Liquidity Ratio',
+                data: liquidityValues,
                 borderColor: 'rgb(34, 197, 94)',
                 backgroundColor: 'rgba(34, 197, 94, 0.1)',
                 tension: 0.4,
@@ -63,16 +66,6 @@ const DebtIncomeChart = () => {
                 backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
                 titleColor: isDarkMode ? '#000' : '#fff',
                 bodyColor: isDarkMode ? '#000' : '#fff',
-                callbacks: {
-                    label: function (context) {
-                        let label = context.dataset.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
-                        label += '₹' + context.parsed.y.toLocaleString('en-IN');
-                        return label;
-                    }
-                }
             }
         },
         scales: {
@@ -82,13 +75,13 @@ const DebtIncomeChart = () => {
                 position: 'left',
                 title: {
                     display: true,
-                    text: 'Avg Debt (₹)',
+                    text: 'Avg Risk Score (%)',
                     color: isDarkMode ? '#9ca3af' : '#374151'
                 },
                 ticks: {
                     color: isDarkMode ? '#9ca3af' : '#374151',
                     callback: function (value) {
-                        return '₹' + (value / 1000) + 'K';
+                        return value + '%';
                     }
                 },
                 grid: {
@@ -101,14 +94,11 @@ const DebtIncomeChart = () => {
                 position: 'right',
                 title: {
                     display: true,
-                    text: 'Avg Income (₹)',
+                    text: 'Avg Liquidity Ratio',
                     color: isDarkMode ? '#9ca3af' : '#374151'
                 },
                 ticks: {
                     color: isDarkMode ? '#9ca3af' : '#374151',
-                    callback: function (value) {
-                        return '₹' + (value / 1000) + 'K';
-                    }
                 },
                 grid: {
                     drawOnChartArea: false
@@ -127,7 +117,7 @@ const DebtIncomeChart = () => {
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Debt-to-Income Ratio Trend</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Risk vs Liquidity Trend</h3>
             <div style={{ height: '280px' }}>
                 <Line data={data} options={options} />
             </div>

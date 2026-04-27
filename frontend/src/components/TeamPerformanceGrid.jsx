@@ -1,13 +1,7 @@
 import React from 'react';
 
-const TeamPerformanceGrid = () => {
-    // Mock data: Team performance
-    const teamData = [
-        { agent: 'Yash Z.', activeCases: 12, successRate: 82, avgResponseTime: '2.3 hrs', totalResolved: 45 },
-        { agent: 'Shaunak S.', activeCases: 10, successRate: 78, avgResponseTime: '3.1 hrs', totalResolved: 38 },
-        { agent: 'Eklavya P.', activeCases: 14, successRate: 75, avgResponseTime: '2.8 hrs', totalResolved: 42 },
-        { agent: 'Siddhi P.', activeCases: 9, successRate: 85, avgResponseTime: '1.9 hrs', totalResolved: 51 }
-    ];
+const TeamPerformanceGrid = ({ data: teamData }) => {
+    const team = teamData || [];
 
     const getSuccessRateColor = (rate) => {
         if (rate >= 85) return 'text-green-700 bg-green-100';
@@ -19,7 +13,7 @@ const TeamPerformanceGrid = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-colors duration-200">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Team Performance Dashboard</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {teamData.map((member) => (
+                {team.map((member) => (
                     <div
                         key={member.agent}
                         className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-700"
