@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ScoringForm from '../components/ScoringForm';
 import ResultCard from '../components/ResultCard';
+import WhatIfSimulator from '../components/WhatIfSimulator';
 
 const LiveScoring = () => {
     const [scoringResult, setScoringResult] = useState(null);
+    const [lastFormData, setLastFormData] = useState(null);
     const [history, setHistory] = useState([]);
 
     const loadHistory = () => {
@@ -86,7 +88,7 @@ const LiveScoring = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Scoring Form - Takes 2 columns on large screens */}
                 <div className="lg:col-span-2">
-                    <ScoringForm onResult={handleResult} />
+                    <ScoringForm onResult={handleResult} onFormData={setLastFormData} />
                 </div>
 
                 {/* Info Panel - Takes 1 column */}
@@ -145,6 +147,11 @@ const LiveScoring = () => {
                 <div className="mt-6">
                     <ResultCard result={scoringResult} />
                 </div>
+            )}
+
+            {/* What-If Simulator */}
+            {scoringResult && lastFormData && (
+                <WhatIfSimulator originalData={lastFormData} originalResult={scoringResult} />
             )}
 
             {/* Scoring History */}

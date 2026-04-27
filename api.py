@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
 import joblib
 import pandas as pd
 from decision_engine import score_customer
-from database import init_db, is_seeded, seed_database, save_scoring_result, get_dashboard_stats, get_risk_overview, get_monitoring_data, get_scoring_history
+from database import (
+    init_db, is_seeded, seed_database, seed_rules,
+    save_scoring_result, get_dashboard_stats, get_risk_overview,
+    get_monitoring_data, get_scoring_history, get_rules, update_rule
+)
 
 # ----------------------------
 # Load Model Once (at startup)
@@ -36,6 +40,7 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     init_db()
+    seed_rules()
     if not is_seeded():
         seed_database()
 
@@ -55,6 +60,14 @@ class CustomerInput(BaseModel):
     stress_type: Optional[str] = None  # Optional - auto-detected by backend
 
 
+class RuleUpdate(BaseModel):
+    is_active: Optional[bool] = None
+    threshold: Optional[float] = None
+    secondary_threshold: Optional[float] = None
+    operator: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+
 
 # ----------------------------
 # Health Check
@@ -65,16 +78,18 @@ def root():
 
 
 # ----------------------------
-# Scoring Endpoint
+# Scoring Endpoint (saves to DB)
 # ----------------------------
 @app.post("/score")
 def score(input_data: CustomerInput):
-
-    # Convert to dictionary
     customer_dict = input_data.dict()
 
-    # Call your decision engine
-    result = score_customer(customer_dict)
+    # Load active rules from database
+    rules = get_rules()
+    active_rules = [r for r in rules if r["is_active"]]
+
+    # Score with configurable rules
+    result = score_customer(customer_dict, rules=active_rules)
 
     # Generate customer ID and save to database
     import random
@@ -82,6 +97,22 @@ def score(input_data: CustomerInput):
     save_scoring_result(customer_id, customer_dict, result)
 
     return {**result, "customer_id": customer_id}
+
+
+# ----------------------------
+# Simulate Endpoint (NO DB save)
+# ----------------------------
+@app.post("/simulate")
+def simulate(input_data: CustomerInput):
+    """Score a customer without saving to DB. For What-If simulator."""
+    customer_dict = input_data.dict()
+
+    # Load active rules
+    rules = get_rules()
+    active_rules = [r for r in rules if r["is_active"]]
+
+    result = score_customer(customer_dict, rules=active_rules)
+    return result
 
 
 # ----------------------------
@@ -114,3 +145,20 @@ def monitoring():
 @app.get("/scoring-history")
 def scoring_history():
     return get_scoring_history()
+
+
+# ----------------------------
+# Rules Engine Endpoints
+# ----------------------------
+@app.get("/rules")
+def list_rules():
+    return get_rules()
+
+
+@app.patch("/rules/{rule_id}")
+def patch_rule(rule_id: int, updates: RuleUpdate):
+    update_dict = {k: v for k, v in updates.dict().items() if v is not None}
+    if "is_active" in update_dict:
+        update_dict["is_active"] = 1 if update_dict["is_active"] else 0
+    update_rule(rule_id, update_dict)
+    return {"status": "updated", "rule_id": rule_id}

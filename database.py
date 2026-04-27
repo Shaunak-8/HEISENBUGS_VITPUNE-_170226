@@ -69,6 +69,23 @@ def init_db():
             icon TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS business_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            condition_field TEXT NOT NULL,
+            operator TEXT NOT NULL,
+            threshold REAL NOT NULL,
+            secondary_field TEXT,
+            secondary_operator TEXT,
+            secondary_threshold REAL,
+            action_type TEXT NOT NULL,
+            action_detail TEXT,
+            is_active INTEGER DEFAULT 1,
+            priority INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
     """)
 
     conn.commit()
@@ -81,6 +98,171 @@ def is_seeded():
     count = conn.execute("SELECT COUNT(*) FROM scoring_results").fetchone()[0]
     conn.close()
     return count > 0
+
+
+def seed_rules():
+    """Seed default business rules if none exist."""
+    conn = get_connection()
+    count = conn.execute("SELECT COUNT(*) FROM business_rules").fetchone()[0]
+    if count > 0:
+        conn.close()
+        return
+
+    default_rules = [
+        {
+            "name": "Severe Stress Escalation",
+            "description": "Escalate to High Risk when stress type is Severe and probability > 20%",
+            "condition_field": "stress_type",
+            "operator": "==",
+            "threshold": 0,  # special: checked as string match
+            "secondary_field": "probability",
+            "secondary_operator": ">",
+            "secondary_threshold": 0.20,
+            "action_type": "escalate_high",
+            "action_detail": "Auto-escalate severe stress customers to High risk",
+            "is_active": 1,
+            "priority": 1,
+        },
+        {
+            "name": "Liquidity Crash Override",
+            "description": "Force High Risk when liquidity trend drops below -2",
+            "condition_field": "liquidity_trend",
+            "operator": "<",
+            "threshold": -2.0,
+            "secondary_field": None,
+            "secondary_operator": None,
+            "secondary_threshold": None,
+            "action_type": "escalate_high",
+            "action_detail": "Rapid liquidity deterioration indicates imminent default",
+            "is_active": 1,
+            "priority": 2,
+        },
+        {
+            "name": "Failed Autodebit Escalation",
+            "description": "Escalate Low to Medium when 3+ autodebits fail",
+            "condition_field": "total_failed_autodebits",
+            "operator": ">=",
+            "threshold": 3.0,
+            "secondary_field": None,
+            "secondary_operator": None,
+            "secondary_threshold": None,
+            "action_type": "escalate_medium",
+            "action_detail": "Multiple payment failures indicate financial distress",
+            "is_active": 1,
+            "priority": 3,
+        },
+        {
+            "name": "ATM Spike Monitoring",
+            "description": "Flag for enhanced monitoring when ATM withdrawals exceed 10",
+            "condition_field": "avg_atm_withdrawals",
+            "operator": ">",
+            "threshold": 10.0,
+            "secondary_field": None,
+            "secondary_operator": None,
+            "secondary_threshold": None,
+            "action_type": "set_monitoring",
+            "action_detail": "Unusual cash withdrawal pattern — possible emergency spending",
+            "is_active": 1,
+            "priority": 4,
+        },
+        {
+            "name": "Lending App Red Flag",
+            "description": "Escalate to Medium when lending app transactions exceed 5",
+            "condition_field": "total_lending_app_txns",
+            "operator": ">=",
+            "threshold": 5.0,
+            "secondary_field": None,
+            "secondary_operator": None,
+            "secondary_threshold": None,
+            "action_type": "escalate_medium",
+            "action_detail": "Heavy payday loan usage signals cash flow crisis",
+            "is_active": 1,
+            "priority": 5,
+        },
+        {
+            "name": "Salary Delay Critical",
+            "description": "Escalate to High when salary delay exceeds 7 days",
+            "condition_field": "avg_salary_delay",
+            "operator": ">=",
+            "threshold": 7.0,
+            "secondary_field": None,
+            "secondary_operator": None,
+            "secondary_threshold": None,
+            "action_type": "escalate_high",
+            "action_detail": "Severely delayed salary suggests employment instability",
+            "is_active": 1,
+            "priority": 6,
+        },
+    ]
+
+    for rule in default_rules:
+        conn.execute("""
+            INSERT INTO business_rules
+            (name, description, condition_field, operator, threshold,
+             secondary_field, secondary_operator, secondary_threshold,
+             action_type, action_detail, is_active, priority)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            rule["name"], rule["description"], rule["condition_field"],
+            rule["operator"], rule["threshold"],
+            rule["secondary_field"], rule["secondary_operator"],
+            rule["secondary_threshold"],
+            rule["action_type"], rule["action_detail"],
+            rule["is_active"], rule["priority"],
+        ))
+
+    conn.commit()
+    conn.close()
+    print(f"✅ Seeded {len(default_rules)} business rules")
+
+
+def get_rules():
+    """Get all business rules."""
+    conn = get_connection()
+    rules = conn.execute("""
+        SELECT id, name, description, condition_field, operator, threshold,
+               secondary_field, secondary_operator, secondary_threshold,
+               action_type, action_detail, is_active, priority
+        FROM business_rules
+        ORDER BY priority
+    """).fetchall()
+    conn.close()
+
+    return [
+        {
+            "id": r["id"],
+            "name": r["name"],
+            "description": r["description"],
+            "condition_field": r["condition_field"],
+            "operator": r["operator"],
+            "threshold": r["threshold"],
+            "secondary_field": r["secondary_field"],
+            "secondary_operator": r["secondary_operator"],
+            "secondary_threshold": r["secondary_threshold"],
+            "action_type": r["action_type"],
+            "action_detail": r["action_detail"],
+            "is_active": bool(r["is_active"]),
+            "priority": r["priority"],
+        }
+        for r in rules
+    ]
+
+
+def update_rule(rule_id, updates):
+    """Update a business rule."""
+    conn = get_connection()
+    allowed_fields = ["is_active", "threshold", "secondary_threshold", "operator", "name", "description"]
+
+    for field, value in updates.items():
+        if field in allowed_fields:
+            conn.execute(
+                f"UPDATE business_rules SET {field} = ? WHERE id = ?",
+                (value, rule_id)
+            )
+
+    conn.commit()
+    conn.close()
+    return True
 
 
 def seed_database():
@@ -275,11 +457,12 @@ def save_scoring_result(customer_id, input_data, result):
             int_type, "Scheduled", assigned_to, next_date, result["priority"]
         ))
 
-    # Log the activity
-    log_activity(
-        "created",
-        f"New scoring completed for {customer_id} - {result['final_risk']} Risk ({result['probability']*100:.1f}%)",
-        "🎯"
+    # Log the activity (use same connection to avoid lock)
+    cursor.execute(
+        "INSERT INTO activity_log (type, message, icon) VALUES (?, ?, ?)",
+        ("created",
+         f"New scoring completed for {customer_id} - {result['final_risk']} Risk ({result['probability']*100:.1f}%)",
+         "🎯")
     )
 
     conn.commit()

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const ScoringForm = ({ onResult }) => {
+const ScoringForm = ({ onResult, onFormData }) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         week: 10,
@@ -29,6 +29,7 @@ const ScoringForm = ({ onResult }) => {
         try {
             const response = await axios.post('http://127.0.0.1:8000/score', formData);
             onResult(response.data);
+            if (onFormData) onFormData({ ...formData });
         } catch (error) {
             console.error('Error scoring customer:', error);
             alert('Failed to score customer. Please ensure the backend is running.');

@@ -9,6 +9,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         { id: 'scoring', label: 'Live Scoring', icon: '🎯' },
         { id: 'risk', label: 'Risk Overview', icon: '⚠️' },
         { id: 'monitoring', label: 'Monitoring', icon: '👁️' },
+        { id: 'rules', label: 'Rules Engine', icon: '⚙️' },
     ];
 
     return (

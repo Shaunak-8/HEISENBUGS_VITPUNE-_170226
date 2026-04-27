@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import LiveScoring from './pages/LiveScoring';
 import RiskOverview from './pages/RiskOverview';
 import Monitoring from './pages/Monitoring';
+import RulesEngine from './pages/RulesEngine';
 import './index.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           {activeTab === 'scoring' && <LiveScoring />}
           {activeTab === 'risk' && <RiskOverview />}
           {activeTab === 'monitoring' && <Monitoring />}
+          {activeTab === 'rules' && <RulesEngine />}
         </div>
       </div>
     </div>
